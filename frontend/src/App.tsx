@@ -32,6 +32,7 @@ import { addToHistory, clearHistory, loadHistory } from './storage'
 import { getRandomBackgroundDataUrl } from './randomBackground'
 import type { UnsplashAttribution } from './unsplashBackground'
 import { getDailyUnsplashBackground } from './unsplashBackground'
+import { getAnalyticsConsent, setAnalyticsConsent } from './analyticsConsent'
 
 function IconLabel({ icon, label }: { icon: ReactNode; label: string }) {
   return (
@@ -56,6 +57,13 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
 
   const [backgroundImage, setBackgroundImage] = useState(() => getRandomBackgroundDataUrl())
   const [backgroundAttribution, setBackgroundAttribution] = useState<UnsplashAttribution | null>(null)
+
+  const [analyticsConsent, setAnalyticsConsentState] = useState(() => getAnalyticsConsent())
+
+  useEffect(() => {
+    if (analyticsConsent === null) return
+    setAnalyticsConsent(analyticsConsent)
+  }, [analyticsConsent])
 
   useEffect(() => {
     let isCancelled = false
@@ -355,6 +363,50 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
           </EuiFlexGroup>
         </div>
       </div>
+
+      {analyticsConsent === null && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 14,
+            right: 14,
+            bottom: footerHeight + 14,
+            zIndex: 10,
+          }}
+        >
+          <div style={{ width: 'min(860px, 92vw)', margin: '0 auto' }}>
+            <EuiPanel paddingSize="m" style={{ backgroundColor: overlayBackground, backdropFilter: 'blur(10px)' }}>
+              <EuiFlexGroup gutterSize="m" alignItems="center" justifyContent="spaceBetween" responsive={false} wrap>
+                <EuiFlexItem>
+                  <EuiText size="s">
+                    <div>
+                      {t('consentText')}{' '}
+                      <a href="/privacy.html" style={{ textDecoration: 'underline' }}>
+                        {t('footerPrivacy')}
+                      </a>
+                      .
+                    </div>
+                  </EuiText>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiFlexGroup gutterSize="s" responsive={false}>
+                    <EuiFlexItem grow={false}>
+                      <EuiButton size="s" fill onClick={() => setAnalyticsConsentState('granted')}>
+                        {t('consentAccept')}
+                      </EuiButton>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiButtonEmpty size="s" onClick={() => setAnalyticsConsentState('denied')}>
+                        {t('consentDecline')}
+                      </EuiButtonEmpty>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiPanel>
+          </div>
+        </div>
+      )}
 
       {backgroundAttribution && (
         <div

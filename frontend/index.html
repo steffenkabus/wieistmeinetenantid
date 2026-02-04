@@ -30,6 +30,30 @@
     content="Finde deine Azure / Microsoft 365 Tenant-ID anhand deiner Domain."
   />
   <link href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" rel="stylesheet" type="text/css">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6970GTYX4F"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+
+      // Default to no analytics storage until the user opts in.
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'wait_for_update': 500
+      });
+
+      gtag('js', new Date());
+
+      // Load measurement config but do not send an automatic page_view.
+      gtag('config', 'G-6970GTYX4F', {
+        'anonymize_ip': true,
+        'send_page_view': false
+      });
+    </script>
 </head>
 
 <body>

@@ -28,6 +28,10 @@ const resources = {
       photoAttribution: 'Photo by {{name}} on Unsplash',
       footerImprint: 'Imprint',
       footerPrivacy: 'Data privacy',
+      consentText:
+        'We use Google Analytics to understand usage and improve this site. You can accept or decline analytics tracking.',
+      consentAccept: 'Accept',
+      consentDecline: 'Decline',
     },
   },
   de: {
@@ -56,6 +60,10 @@ const resources = {
       photoAttribution: 'Foto von {{name}} auf Unsplash',
       footerImprint: 'Impressum',
       footerPrivacy: 'Datenschutz',
+      consentText:
+        'Wir verwenden Google Analytics, um die Nutzung zu verstehen und diese Seite zu verbessern. Du kannst dem zustimmen oder es ablehnen.',
+      consentAccept: 'Akzeptieren',
+      consentDecline: 'Ablehnen',
     },
   },
 } as const
