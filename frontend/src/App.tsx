@@ -7,6 +7,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiFieldText,
+  EuiShowFor,
   EuiHorizontalRule,
   EuiPanel,
   EuiSpacer,
@@ -36,11 +37,11 @@ import type { UnsplashAttribution } from './unsplashBackground'
 import { getDailyUnsplashBackground } from './unsplashBackground'
 import { getAnalyticsConsent, setAnalyticsConsent } from './analyticsConsent'
 
-function IconLabel({ icon, label }: { icon: ReactNode; label: string }) {
+function IconLabel({ icon, label }: { icon: ReactNode; label: ReactNode }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       <span aria-hidden="true">{icon}</span>
-      <span>{label}</span>
+      {typeof label === 'string' ? <span>{label}</span> : label}
     </span>
   )
 }
@@ -55,7 +56,7 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
   const [lastResult, setLastResult] = useState<TenantLookupResult | null>(null)
   const [history, setHistory] = useState<TenantLookupResult[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [copiedValue, setCopiedValue] = useState<string | null>(null)
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [historyVisible, setHistoryVisible] = useState(true)
   const [metadataExpanded, setMetadataExpanded] = useState(false)
 
@@ -189,11 +190,11 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
     [colorMode],
   )
 
-  const onCopy = useCallback(async (value: string) => {
+  const onCopy = useCallback(async (value: string, key: string) => {
     try {
       await navigator.clipboard.writeText(value)
-      setCopiedValue(value)
-      window.setTimeout(() => setCopiedValue((current) => (current === value ? null : current)), 1200)
+      setCopiedKey(key)
+      window.setTimeout(() => setCopiedKey((current) => (current === key ? null : current)), 1200)
     } catch {
       // ignore
     }
@@ -444,10 +445,10 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                       </EuiText>
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
-                      <EuiButtonEmpty size="s" onClick={() => void onCopy(lastResult.tenantId)}>
+                      <EuiButtonEmpty size="s" onClick={() => void onCopy(lastResult.tenantId, 'result:tenantId')}>
                         <IconLabel
                           icon={<Copy20Regular />}
-                          label={copiedValue === lastResult.tenantId ? t('copied') : t('actionCopy')}
+                          label={copiedKey === 'result:tenantId' ? t('copied') : t('actionCopy')}
                         />
                       </EuiButtonEmpty>
                     </EuiFlexItem>
@@ -495,11 +496,11 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
 
             <EuiHorizontalRule margin="l" style={{ borderColor: separatorColor, opacity: 1 }} />
 
-            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
               <EuiFlexItem grow={false}>
                 <History20Regular aria-hidden="true" />
               </EuiFlexItem>
-              <EuiFlexItem>
+              <EuiFlexItem style={{ minWidth: 180, flexBasis: 180 }}>
                 <EuiTitle size="xs">
                   <h2 style={{ margin: 0 }}>{t('recentTitle')}</h2>
                 </EuiTitle>
@@ -509,8 +510,12 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                   size="s"
                   onClick={onExportHistory}
                   isDisabled={history.length === 0}
+                  aria-label={t('actionExportHistory')}
                 >
-                  <IconLabel icon={<ArrowDownload20Regular />} label={t('actionExportHistory')} />
+                  <IconLabel
+                    icon={<ArrowDownload20Regular />}
+                    label={<EuiShowFor sizes={['m', 'l', 'xl']}>{t('actionExportHistory')}</EuiShowFor>}
+                  />
                 </EuiButtonEmpty>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
@@ -518,8 +523,12 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                   size="s"
                   onClick={onClearHistory}
                   isDisabled={history.length === 0}
+                  aria-label={t('actionClearHistory')}
                 >
-                  <IconLabel icon={<Delete20Regular />} label={t('actionClearHistory')} />
+                  <IconLabel
+                    icon={<Delete20Regular />}
+                    label={<EuiShowFor sizes={['m', 'l', 'xl']}>{t('actionClearHistory')}</EuiShowFor>}
+                  />
                 </EuiButtonEmpty>
               </EuiFlexItem>
             </EuiFlexGroup>
@@ -533,7 +542,7 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
               ) : (
                 <EuiFlexGroup direction="column" gutterSize="s">
                   {history.map((item) => (
-                    <EuiFlexItem key={`${item.domain}:${item.tenantId}`}>
+                    <EuiFlexItem key={`${item.domain}:${item.tenantId}:${item.resolvedAt}`}>
                       <EuiPanel paddingSize="m">
                         <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                           <EuiFlexItem>
@@ -546,10 +555,13 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                           </EuiFlexItem>
 
                           <EuiFlexItem grow={false}>
-                            <EuiButtonEmpty size="s" onClick={() => void onCopy(item.tenantId)}>
+                            <EuiButtonEmpty
+                              size="s"
+                              onClick={() => void onCopy(item.tenantId, `history:${item.domain}:${item.resolvedAt}`)}
+                            >
                               <IconLabel
                                 icon={<Copy20Regular />}
-                                label={copiedValue === item.tenantId ? t('copied') : t('actionCopy')}
+                                label={copiedKey === `history:${item.domain}:${item.resolvedAt}` ? t('copied') : t('actionCopy')}
                               />
                             </EuiButtonEmpty>
                           </EuiFlexItem>
