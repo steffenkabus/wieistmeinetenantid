@@ -3,11 +3,10 @@ import {
   EuiButton,
   EuiButtonEmpty,
   EuiCode,
+  EuiDescriptionList,
   EuiFlexGroup,
   EuiFlexItem,
   EuiFieldText,
-  EuiFormControlLayout,
-  EuiFormRow,
   EuiHorizontalRule,
   EuiPanel,
   EuiSpacer,
@@ -18,7 +17,10 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { useTranslation } from 'react-i18next'
 import {
   ArrowClockwise20Regular,
+  ArrowDownload20Regular,
   Checkmark20Regular,
+  ChevronDown20Regular,
+  ChevronUp20Regular,
   Copy20Regular,
   Delete20Regular,
   ErrorCircle20Regular,
@@ -54,11 +56,23 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
   const [history, setHistory] = useState<TenantLookupResult[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [copiedValue, setCopiedValue] = useState<string | null>(null)
+  const [historyVisible, setHistoryVisible] = useState(true)
+  const [metadataExpanded, setMetadataExpanded] = useState(false)
 
   const [backgroundImage, setBackgroundImage] = useState(() => getRandomBackgroundDataUrl())
   const [backgroundAttribution, setBackgroundAttribution] = useState<UnsplashAttribution | null>(null)
 
   const [analyticsConsent, setAnalyticsConsentState] = useState(() => getAnalyticsConsent())
+
+  const inputRef = useCallback((node: HTMLInputElement | null) => {
+    if (node) {
+      // Focus on mount if there's a URL parameter
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('domain')) {
+        window.setTimeout(() => node.focus(), 100)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (analyticsConsent === null) return
@@ -89,6 +103,51 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
 
   useEffect(() => {
     setHistory(loadHistory())
+  }, [])
+
+  // Handle URL parameters on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const domain = params.get('domain')
+    if (domain) {
+      setDomainInput(domain)
+      // Auto-resolve after a brief delay
+      window.setTimeout(() => {
+        void resolveTenantIdForDomain(domain).then(result => {
+          setLastResult(result)
+          setHistory(addToHistory(result))
+        }).catch(() => {
+          // Silently fail if URL param domain is invalid
+        })
+      }, 300)
+    }
+  }, [])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ctrl/Cmd + K: Focus input
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        document.querySelector<HTMLInputElement>('input[type="text"]')?.focus()
+      }
+      // Escape: Clear input
+      if (e.key === 'Escape') {
+        const input = document.querySelector<HTMLInputElement>('input[type="text"]')
+        if (input && document.activeElement === input && input.value) {
+          e.preventDefault()
+          setDomainInput('')
+        }
+      }
+      // Ctrl/Cmd + H: Toggle history
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault()
+        setHistoryVisible(v => !v)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const panelBackground = useMemo(
@@ -170,6 +229,46 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
     setHistory([])
   }, [])
 
+  const onExportHistory = useCallback(() => {
+    if (history.length === 0) return
+    
+    // CSV header
+    const header = 'Domain,Tenant ID,Resolved At\n'
+    
+    // CSV rows
+    const rows = history.map(item => {
+      const domain = item.domain.replace(/"/g, '""') // Escape quotes
+      const tenantId = item.tenantId
+      const resolvedAt = item.resolvedAt
+      return `"${domain}","${tenantId}","${resolvedAt}"`
+    }).join('\n')
+    
+    const csvContent = header + rows
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `tenant-history-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }, [history])
+
+  const onExampleClick = useCallback((domain: string) => {
+    setDomainInput(domain)
+    setErrorMessage(null)
+    void resolveTenantIdForDomain(domain).then(result => {
+      setLastResult(result)
+      setHistory(addToHistory(result))
+    }).catch(err => {
+      const message =
+        err instanceof Error && err.message === 'empty_domain'
+          ? t('errorEmpty')
+          : t('errorGeneric')
+      setErrorMessage(message)
+      setLastResult(null)
+    })
+  }, [t])
+
   return (
     <div
       style={{
@@ -217,6 +316,7 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
               </label>
               <div style={{ display: 'flex', width: '100%', gap: 0, flexWrap: 'nowrap', alignItems: 'stretch' }}>
                 <EuiFieldText
+                  inputRef={inputRef}
                   value={domainInput}
                   placeholder={t('inputPlaceholder')}
                   onChange={(e) => setDomainInput(e.target.value)}
@@ -261,6 +361,44 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                   {isResolving ? <ArrowClockwise20Regular /> : <Search20Regular />}
                 </EuiButton>
               </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <EuiText size="s" color="subdued" style={{ marginBottom: 6 }}>
+                {t('examplesLabel')}
+              </EuiText>
+              <EuiFlexGroup gutterSize="s" wrap responsive={false}>
+                <EuiFlexItem grow={false}>
+                  <EuiBadge
+                    color="hollow"
+                    onClick={() => onExampleClick('microsoft.com')}
+                    onClickAriaLabel="Try microsoft.com"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    microsoft.com
+                  </EuiBadge>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiBadge
+                    color="hollow"
+                    onClick={() => onExampleClick('contoso.com')}
+                    onClickAriaLabel="Try contoso.com"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    contoso.com
+                  </EuiBadge>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiBadge
+                    color="hollow"
+                    onClick={() => onExampleClick('github.com')}
+                    onClickAriaLabel="Try github.com"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    github.com
+                  </EuiBadge>
+                </EuiFlexItem>
+              </EuiFlexGroup>
             </div>
 
             {errorMessage && (
@@ -315,6 +453,43 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                     </EuiFlexItem>
                   </EuiFlexGroup>
                 </EuiPanel>
+
+                {lastResult.metadata?.tenantRegion && (
+                  <>
+                    <EuiSpacer size="m" />
+                    <div>
+                      <EuiButtonEmpty
+                        size="s"
+                        onClick={() => setMetadataExpanded(!metadataExpanded)}
+                        iconType={() => metadataExpanded ? <ChevronUp20Regular /> : <ChevronDown20Regular />}
+                        iconSide="left"
+                      >
+                        {t('metadataTitle')}
+                      </EuiButtonEmpty>
+                      {metadataExpanded && (
+                        <>
+                          <EuiSpacer size="s" />
+                          <EuiPanel paddingSize="m" color="subdued">
+                            <EuiDescriptionList
+                              type="column"
+                              compressed
+                              listItems={[
+                                ...(lastResult.metadata.tenantRegion ? [{
+                                  title: <span style={{ fontSize: '0.875rem' }}>{t('metadataTenantRegion')}</span>,
+                                  description: <EuiBadge color="primary" style={{ fontSize: '0.875rem' }}>{lastResult.metadata.tenantRegion}</EuiBadge>,
+                                }] : []),
+                                ...(lastResult.metadata.cloudInstance ? [{
+                                  title: <span style={{ fontSize: '0.875rem' }}>{t('metadataCloudType')}</span>,
+                                  description: <EuiBadge color="hollow" style={{ fontSize: '0.875rem' }}>{lastResult.metadata.cloudInstance}</EuiBadge>,
+                                }] : []),
+                              ]}
+                            />
+                          </EuiPanel>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -332,6 +507,15 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
               <EuiFlexItem grow={false}>
                 <EuiButtonEmpty
                   size="s"
+                  onClick={onExportHistory}
+                  isDisabled={history.length === 0}
+                >
+                  <IconLabel icon={<ArrowDownload20Regular />} label={t('actionExportHistory')} />
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="s"
                   onClick={onClearHistory}
                   isDisabled={history.length === 0}
                 >
@@ -341,38 +525,40 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
             </EuiFlexGroup>
             <EuiSpacer size="m" />
 
-            {history.length === 0 ? (
-              <EuiText size="s" color="subdued">
-                {t('emptyRecent')}
-              </EuiText>
-            ) : (
-              <EuiFlexGroup direction="column" gutterSize="s">
-                {history.map((item) => (
-                  <EuiFlexItem key={`${item.domain}:${item.tenantId}`}>
-                    <EuiPanel paddingSize="m">
-                      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
-                        <EuiFlexItem>
-                          <EuiText size="s">
-                            <div style={{ fontWeight: 600 }}>{item.domain}</div>
-                            <div style={{ marginTop: 4 }}>
-                              {t('tenantId')}: <EuiCode>{item.tenantId}</EuiCode>
-                            </div>
-                          </EuiText>
-                        </EuiFlexItem>
+            {historyVisible && (
+              history.length === 0 ? (
+                <EuiText size="s" color="subdued">
+                  {t('emptyRecent')}
+                </EuiText>
+              ) : (
+                <EuiFlexGroup direction="column" gutterSize="s">
+                  {history.map((item) => (
+                    <EuiFlexItem key={`${item.domain}:${item.tenantId}`}>
+                      <EuiPanel paddingSize="m">
+                        <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+                          <EuiFlexItem>
+                            <EuiText size="s">
+                              <div style={{ fontWeight: 600 }}>{item.domain}</div>
+                              <div style={{ marginTop: 4 }}>
+                                {t('tenantId')}: <EuiCode>{item.tenantId}</EuiCode>
+                              </div>
+                            </EuiText>
+                          </EuiFlexItem>
 
-                        <EuiFlexItem grow={false}>
-                          <EuiButtonEmpty size="s" onClick={() => void onCopy(item.tenantId)}>
-                            <IconLabel
-                              icon={<Copy20Regular />}
-                              label={copiedValue === item.tenantId ? t('copied') : t('actionCopy')}
-                            />
-                          </EuiButtonEmpty>
-                        </EuiFlexItem>
-                      </EuiFlexGroup>
-                    </EuiPanel>
-                  </EuiFlexItem>
-                ))}
-              </EuiFlexGroup>
+                          <EuiFlexItem grow={false}>
+                            <EuiButtonEmpty size="s" onClick={() => void onCopy(item.tenantId)}>
+                              <IconLabel
+                                icon={<Copy20Regular />}
+                                label={copiedValue === item.tenantId ? t('copied') : t('actionCopy')}
+                              />
+                            </EuiButtonEmpty>
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                      </EuiPanel>
+                    </EuiFlexItem>
+                  ))}
+                </EuiFlexGroup>
+              )
             )}
           </EuiPanel>
         </EuiFlexItem>

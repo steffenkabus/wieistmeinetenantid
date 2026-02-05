@@ -2,6 +2,31 @@ export type TenantLookupResult = {
   domain: string
   tenantId: string
   resolvedAt: string
+  metadata?: {
+    tenantRegion?: string
+    cloudInstance?: string
+  }
+}
+
+function getCloudTypeName(cloudInstance: string | undefined): string {
+  if (!cloudInstance) return 'Global'
+  
+  const instance = cloudInstance.toLowerCase()
+  
+  if (instance.includes('microsoftonline.us')) {
+    return 'US Government'
+  }
+  if (instance.includes('microsoftonline.cn') || instance.includes('partner.microsoftonline.cn')) {
+    return 'China (21Vianet)'
+  }
+  if (instance.includes('microsoftonline.de')) {
+    return 'Germany'
+  }
+  if (instance === 'microsoftonline.com') {
+    return 'Global'
+  }
+  
+  return cloudInstance
 }
 
 export function normalizeDomain(input: string): string {
@@ -44,7 +69,11 @@ export async function resolveTenantIdForDomain(domainInput: string): Promise<Ten
     throw new Error(`http_${response.status}`)
   }
 
-  const data = (await response.json()) as { issuer?: string }
+  const data = (await response.json()) as {
+    issuer?: string
+    tenant_region_scope?: string
+    cloud_instance_name?: string
+  }
   const issuer = data.issuer ?? ''
 
   // Example issuer: https://login.microsoftonline.com/<tenantId>/v2.0
@@ -60,5 +89,9 @@ export async function resolveTenantIdForDomain(domainInput: string): Promise<Ten
     domain,
     tenantId: match[1],
     resolvedAt: new Date().toISOString(),
+    metadata: {
+      tenantRegion: data.tenant_region_scope,
+      cloudInstance: getCloudTypeName(data.cloud_instance_name),
+    },
   }
 }
