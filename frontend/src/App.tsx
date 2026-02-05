@@ -6,6 +6,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiFieldText,
+  EuiFormControlLayout,
   EuiFormRow,
   EuiHorizontalRule,
   EuiPanel,
@@ -91,12 +92,41 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
   }, [])
 
   const panelBackground = useMemo(
-    () => (colorMode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.70)'),
+    () => (colorMode === 'dark' ? 'rgba(0, 0, 0, 0.52)' : 'rgba(255, 255, 255, 0.48)'),
     [colorMode],
   )
 
   const overlayBackground = useMemo(
+    () => (colorMode === 'dark' ? 'rgba(0, 0, 0, 0.52)' : 'rgba(255, 255, 255, 0.38)'),
+    [colorMode],
+  )
+
+  const glassBackdropFilter = useMemo(() => 'blur(18px) saturate(1.4)', [])
+
+  const footerBackground = useMemo(
     () => (colorMode === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.62)'),
+    [colorMode],
+  )
+
+  const footerBackdropFilter = useMemo(() => 'blur(12px) saturate(1.25)', [])
+
+  const glassBorder = useMemo(
+    () => (colorMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.66)'),
+    [colorMode],
+  )
+
+  const glassShadow = useMemo(
+    () => (colorMode === 'dark' ? '0 18px 48px rgba(0, 0, 0, 0.58)' : '0 18px 48px rgba(0, 0, 0, 0.20)'),
+    [colorMode],
+  )
+
+  const separatorColor = useMemo(
+    () => (colorMode === 'dark' ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.14)'),
+    [colorMode],
+  )
+
+  const footerTopBorder = useMemo(
+    () => (colorMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(0, 0, 0, 0.12)'),
     [colorMode],
   )
 
@@ -158,7 +188,14 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
         <EuiFlexItem grow={false} style={{ width: 'min(860px, 92vw)' }}>
           <EuiPanel
             paddingSize="l"
-            style={{ backgroundColor: panelBackground, backdropFilter: 'blur(10px)', borderRadius: 15 }}
+            style={{
+              backgroundColor: panelBackground,
+              backdropFilter: glassBackdropFilter,
+              WebkitBackdropFilter: glassBackdropFilter,
+              borderRadius: 15,
+              border: glassBorder,
+              boxShadow: glassShadow,
+            }}
           >
             <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false}>
               <EuiFlexItem>
@@ -175,26 +212,10 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
             <EuiSpacer size="l" />
 
             <EuiFormRow label={t('inputLabel')} fullWidth>
-              <EuiFlexGroup
-                gutterSize="s"
-                responsive={false}
-                alignItems="center"
-                style={{ width: '100%' }}
-              >
-                <EuiFlexItem>
-                  <EuiFieldText
-                    fullWidth
-                    value={domainInput}
-                    placeholder={t('inputPlaceholder')}
-                    onChange={(e) => setDomainInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') void onResolve()
-                    }}
-                    style={{ height: 50, borderRadius: 10 }}
-                  />
-                </EuiFlexItem>
-
-                <EuiFlexItem grow={false}>
+              <EuiFormControlLayout
+                fullWidth
+                style={{ height: 50, borderRadius: 10, overflow: 'hidden' }}
+                append={
                   <EuiButton
                     onClick={() => void onResolve()}
                     disabled={isResolving}
@@ -204,16 +225,40 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                     style={{
                       minWidth: 50,
                       height: 50,
-                      borderRadius: 10,
+                      borderTopLeftRadius: 0,
+                      borderBottomLeftRadius: 0,
+                      borderTopRightRadius: 10,
+                      borderBottomRightRadius: 10,
                       paddingInline: 0,
                       display: 'flex',
+                      alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
                     {isResolving ? <ArrowClockwise20Regular /> : <Search20Regular />}
                   </EuiButton>
-                </EuiFlexItem>
-              </EuiFlexGroup>
+                }
+              >
+                <EuiFieldText
+                  controlOnly
+                  value={domainInput}
+                  placeholder={t('inputPlaceholder')}
+                  onChange={(e) => setDomainInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void onResolve()
+                  }}
+                  style={{
+                    height: 50,
+                    borderTopLeftRadius: 10,
+                    borderBottomLeftRadius: 10,
+                    borderTopRightRadius: 0,
+                    borderBottomRightRadius: 0,
+                    lineHeight: '50px',
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                  }}
+                />
+              </EuiFormControlLayout>
             </EuiFormRow>
 
             {errorMessage && (
@@ -271,7 +316,7 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
               </>
             )}
 
-            <EuiHorizontalRule margin="l" />
+            <EuiHorizontalRule margin="l" style={{ borderColor: separatorColor, opacity: 1 }} />
 
             <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
               <EuiFlexItem grow={false}>
@@ -338,9 +383,10 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
           right: 0,
           bottom: 0,
           padding: '10px 14px',
-          background: overlayBackground,
-          backdropFilter: 'blur(10px)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+          background: footerBackground,
+          backdropFilter: footerBackdropFilter,
+          WebkitBackdropFilter: footerBackdropFilter,
+          borderTop: footerTopBorder,
         }}
       >
         <div style={{ width: 'min(860px, 92vw)', margin: '0 auto' }}>
@@ -384,7 +430,16 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
           }}
         >
           <div style={{ width: 'min(860px, 92vw)', margin: '0 auto' }}>
-            <EuiPanel paddingSize="m" style={{ backgroundColor: overlayBackground, backdropFilter: 'blur(10px)' }}>
+            <EuiPanel
+              paddingSize="m"
+              style={{
+                backgroundColor: overlayBackground,
+                backdropFilter: glassBackdropFilter,
+                WebkitBackdropFilter: glassBackdropFilter,
+                border: glassBorder,
+                boxShadow: glassShadow,
+              }}
+            >
               <EuiFlexGroup gutterSize="m" alignItems="center" justifyContent="spaceBetween" responsive={false} wrap>
                 <EuiFlexItem>
                   <EuiText size="s">
@@ -426,7 +481,8 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
             padding: '8px 10px',
             borderRadius: 8,
             background: overlayBackground,
-            backdropFilter: 'blur(8px)',
+            backdropFilter: glassBackdropFilter,
+            WebkitBackdropFilter: glassBackdropFilter,
             maxWidth: 'min(520px, 92vw)',
           }}
         >
