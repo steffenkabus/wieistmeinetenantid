@@ -21,7 +21,6 @@ import {
   Copy20Regular,
   Delete20Regular,
   ErrorCircle20Regular,
-  Globe20Regular,
   History20Regular,
   Link20Regular,
   Search20Regular,
@@ -157,7 +156,10 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
     >
       <EuiFlexGroup justifyContent="center" style={{ width: '100%' }}>
         <EuiFlexItem grow={false} style={{ width: 'min(860px, 92vw)' }}>
-          <EuiPanel paddingSize="l" style={{ backgroundColor: panelBackground, backdropFilter: 'blur(10px)' }}>
+          <EuiPanel
+            paddingSize="l"
+            style={{ backgroundColor: panelBackground, backdropFilter: 'blur(10px)', borderRadius: 15 }}
+          >
             <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false}>
               <EuiFlexItem>
                 <EuiTitle size="m">
@@ -188,7 +190,7 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') void onResolve()
                     }}
-                    prepend={<Globe20Regular aria-hidden="true" />}
+                    style={{ height: 50, borderRadius: 10 }}
                   />
                 </EuiFlexItem>
 
@@ -199,7 +201,14 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
                     fill
                     aria-label={t(isResolving ? 'resolving' : 'resolveButton')}
                     title={t(isResolving ? 'resolving' : 'resolveButton')}
-                    style={{ minWidth: 44, paddingInline: 0, display: 'flex', justifyContent: 'center' }}
+                    style={{
+                      minWidth: 50,
+                      height: 50,
+                      borderRadius: 10,
+                      paddingInline: 0,
+                      display: 'flex',
+                      justifyContent: 'center',
+                    }}
                   >
                     {isResolving ? <ArrowClockwise20Regular /> : <Search20Regular />}
                   </EuiButton>
