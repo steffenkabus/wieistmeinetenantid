@@ -211,55 +211,57 @@ export default function App({ colorMode }: { colorMode: 'light' | 'dark' }) {
 
             <EuiSpacer size="l" />
 
-            <EuiFormRow label={t('inputLabel')} fullWidth>
-              <EuiFormControlLayout
-                fullWidth
-                style={{ height: 50, borderRadius: 10, overflow: 'hidden' }}
-                append={
-                  <EuiButton
-                    onClick={() => void onResolve()}
-                    disabled={isResolving}
-                    fill
-                    aria-label={t(isResolving ? 'resolving' : 'resolveButton')}
-                    title={t(isResolving ? 'resolving' : 'resolveButton')}
-                    style={{
-                      minWidth: 50,
-                      height: 50,
-                      borderTopLeftRadius: 0,
-                      borderBottomLeftRadius: 0,
-                      borderTopRightRadius: 10,
-                      borderBottomRightRadius: 10,
-                      paddingInline: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {isResolving ? <ArrowClockwise20Regular /> : <Search20Regular />}
-                  </EuiButton>
-                }
-              >
+            <div style={{ marginBottom: 16, width: '100%' }}>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 600 }}>
+                {t('inputLabel')}
+              </label>
+              <div style={{ display: 'flex', width: '100%', gap: 0, flexWrap: 'nowrap', alignItems: 'stretch' }}>
                 <EuiFieldText
-                  controlOnly
                   value={domainInput}
                   placeholder={t('inputPlaceholder')}
                   onChange={(e) => setDomainInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') void onResolve()
                   }}
+                  compressed={false}
+                  fullWidth
                   style={{
                     height: 50,
                     borderTopLeftRadius: 10,
                     borderBottomLeftRadius: 10,
                     borderTopRightRadius: 0,
                     borderBottomRightRadius: 0,
-                    lineHeight: '50px',
-                    paddingTop: 0,
-                    paddingBottom: 0,
+                    flex: '1 1 auto',
+                    minWidth: 0,
+                    width: '100%',
                   }}
                 />
-              </EuiFormControlLayout>
-            </EuiFormRow>
+                <EuiButton
+                  onClick={() => void onResolve()}
+                  disabled={isResolving}
+                  fill
+                  aria-label={t(isResolving ? 'resolving' : 'resolveButton')}
+                  title={t(isResolving ? 'resolving' : 'resolveButton')}
+                  style={{
+                    minWidth: 50,
+                    width: 50,
+                    height: 50,
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
+                    borderTopRightRadius: 10,
+                    borderBottomRightRadius: 10,
+                    paddingInline: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginLeft: -1,
+                  }}
+                >
+                  {isResolving ? <ArrowClockwise20Regular /> : <Search20Regular />}
+                </EuiButton>
+              </div>
+            </div>
 
             {errorMessage && (
               <>
